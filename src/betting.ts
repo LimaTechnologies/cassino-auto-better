@@ -49,7 +49,7 @@ export async function handleBetsOpen(attrs: any, socket: WebSocket, username: st
 
 			await state.updateOne({
 				inBetMode: false,
-				betAmount: state.initial_balance ? calculateMinimumBet(state.initial_balance + (state.betAmount * 2)) : state.baseBetAmount	,
+				betAmount: state.initial_balance ? calculateMinimumBet(state.initial_balance + (state.baseBetAmount * 2)) : state.baseBetAmount	,
 				initial_balance: state.initial_balance ? state.initial_balance + (state.betAmount * 2) : 0
 			});
 		} else {
