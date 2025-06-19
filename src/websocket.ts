@@ -2,8 +2,12 @@ import { RouletteHistory } from '../model/history';
 import { userStates } from '../model/state';
 import { parseAndHandleMessage } from './parser';
 import { WS_URL } from './state';
+import { calculateMinimumBet } from './utils';
 
 export async function setupWebSocket(username: string) {
+  const user = await userStates.findOne({
+    username: username
+  });
   await userStates.findOneAndUpdate(
     {
       username: username
@@ -11,6 +15,7 @@ export async function setupWebSocket(username: string) {
     {
       history: [],
       inBetMode: false,
+      baseBetAmount: user?.initial_balance ? calculateMinimumBet(user.initial_balance) : 0.4,
     }
   )
 

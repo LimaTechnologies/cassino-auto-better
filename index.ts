@@ -8,6 +8,6 @@ connect(process.env.MONGO_URL!)
         console.log('[🟢 Inicializando bot de roleta]');
         setupWebSocket("lkz");
     })
-    .catch(err => {
+    .catch(err => {         
         console.error('[🔴 Erro ao conectar ao MongoDB]', err)
     })

@@ -12,6 +12,7 @@ export interface IState extends Document {
     tableId: string;
     gameId: string;
     username: string;
+    initial_balance: number; // campo adicionado
     ws_url: string; // novo campo
 }
 
@@ -27,7 +28,8 @@ const StateSchema: Schema = new Schema({
     tableId: { type: String, required: true },
     gameId: { type: String, required: true },
     username: { type: String, required: true },
-    ws_url: { type: String, required: true } // novo campo
+    ws_url: { type: String, required: true }, // novo campo
+    initial_balance: { type: Number, required: true } // campo adicionado
 });
 
 export const userStates = mongoose.model<IState>('State', StateSchema);

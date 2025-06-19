@@ -31,6 +31,11 @@ export async function sendBetCommand(gameId: string, username: string, socket: W
     console.log(`[🎯 Apostando em ${state.targetColor}] €${state.betAmount.toFixed(2)} no jogo ${gameId}`);
 }
 
+export function calculateMinimumBet(balance: number): number {
+    const minBet = Number((balance / Math.pow(2, 7)).toFixed(1));
+    return Math.max(minBet, 0.1);
+}
+
 export function extractTags(xml: string): { name: string; attrs: Record<string, string>; content: string }[] {
     const tagPattern = /<([^!?\/\s>]+)([^>]*)>(.*?)<\/\1>|<([^!?\/\s>]+)([^>]*)\/?>/gs;
     const tags: { name: string; attrs: Record<string, string>; content: string }[] = [];
