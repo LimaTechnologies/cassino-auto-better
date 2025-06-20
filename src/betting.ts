@@ -27,14 +27,18 @@ export async function handleBetsOpen(attrs: any, socket: WebSocket, username: st
 	const lastN = history.slice(-state.startAfterNRepeats);
 	const allSame = lastN.length === state.startAfterNRepeats && lastN.every(c => c === lastN[0]);
 
+	const betAmount = calculateMinimumBet(state.initial_balance);
+
 	if (!state.inBetMode && allSame) {
 		const targetColor = getOppositeColor(lastN[0], lastColor);
 
 		await state.updateOne({
 			inBetMode: true,
 			targetColor: targetColor,
-			betAmount: state.initial_balance ? calculateMinimumBet(state.initial_balance) : state.baseBetAmount,
-			initial_balance: state.initial_balance ? state.initial_balance - calculateMinimumBet(state.initial_balance) : 0,
+			betAmount: betAmount,
+			$inc: {
+				initial_balance: -betAmount // subtrai o valor da aposta inicial
+			}
 		})
 
 		sendBetCommand(gameId, username, socket);
@@ -49,14 +53,24 @@ export async function handleBetsOpen(attrs: any, socket: WebSocket, username: st
 
 			await state.updateOne({
 				inBetMode: false,
-				betAmount: state.initial_balance ? calculateMinimumBet(state.initial_balance + (state.baseBetAmount * 2)) : state.baseBetAmount	,
-				initial_balance: state.initial_balance ? state.initial_balance + (state.betAmount * 2) : 0
+				betAmount: calculateMinimumBet(state.initial_balance + (state.betAmount * 2)), // reinicia a aposta com o valor mínimo
+				$inc: {
+					initial_balance: state.betAmount * 2 // dobra o valor apostado
+				}
 			});
+
+			if (allSame) {
+				await state.updateOne({
+					inBetMode: true
+				});
+
+				await sendBetCommand(gameId, username, socket);
+			}
 		} else {
 			await state.updateOne({
 				betAmount: state.betAmount * 2,
 				$inc: {
-					initial_balance: state.initial_balance ? -state.betAmount : 0
+					initial_balance: -state.betAmount * 2 // subtrai o dobro do valor apostado
 				}
 			})
 

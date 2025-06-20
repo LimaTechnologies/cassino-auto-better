@@ -6,7 +6,7 @@ connect(process.env.MONGO_URL!)
         console.log('[🟢 Conectado ao MongoDB]');
 
         console.log('[🟢 Inicializando bot de roleta]');
-        setupWebSocket("lkz");
+        setupWebSocket("joao");
     })
     .catch(err => {         
         console.error('[🔴 Erro ao conectar ao MongoDB]', err)
