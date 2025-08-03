@@ -8,18 +8,18 @@ import { userStates } from "../../model/state";
 
 const rollbit = "https://rollbit.com/"
 
-const client = new BrowserInstance({
-    "sessionName": "default-session",
-    headless: false,
-})
-
-await client.init();
-
-await client.browser
-
 const roullete = "https://rollbit.com/private/games/launch/pragmaticexternal:RouletteAzure"
 
 export async function getNewSocketUrl(email: string) {
+    const client = new BrowserInstance({
+        "sessionName": email,
+        headless: false,
+    })
+
+    await client.init();
+
+    await client.browser
+
     const user = await userStates.findOne({ login: email });
 
     if (!user) {
