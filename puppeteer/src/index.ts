@@ -13,21 +13,19 @@ const client = new BrowserInstance({
     headless: false,
 })
 
-await connect(process.env.MONGO_URL!)
-
 await client.init();
 
 await client.browser
 
-const users = await userStates.find({
-    login: { $exists: true },
-    password: { $exists: true },
-})
-
 const roullete = "https://rollbit.com/private/games/launch/pragmaticexternal:RouletteAzure"
 
-for (const user of users) {
-    const email = user.login;
+export async function getNewSocketUrl(email: string) {
+    const user = await userStates.findOne({ email });
+
+    if (!user) {
+        throw new Error(`User with email ${email} not found`);
+    }
+
     const password = user.password;
 
     const page = await client.browser?.newPage();
