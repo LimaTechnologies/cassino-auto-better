@@ -89,7 +89,7 @@ async function checkWin(state: IState) {
 				}
 			})
 
-			console.log(`[🔁 Dobro] Ainda na sequência contrária, nova aposta: €${state.betAmount.toFixed(2)}`);
+			console.log(`[🔁 Dobro] Ainda na sequência contrária, nova aposta: €${(state.betAmount * 2).toFixed(2)}`);
 		}
 	}
 }

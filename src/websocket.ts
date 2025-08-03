@@ -8,8 +8,8 @@ let interval: NodeJS.Timeout;
 
 export async function setupSocket(url: string, user: IState) {
 	if (socket) {
-		socket.close();
 		clearInterval(interval);
+		socket.close();
 	}
 	socket = new WebSocket(url);
 

@@ -1,13 +1,11 @@
+import { userStates } from './model/state';
 import { setupWebSocket } from './src/websocket';
 import { connect } from "mongoose"
 
-connect(process.env.MONGO_URL!)
-    .then(() => {
-        console.log('[🟢 Conectado ao MongoDB]');
+await connect(process.env.MONGO_URL!)
 
-        console.log('[🟢 Inicializando bot de roleta]');
-        setupWebSocket("joaovitor_rlima@hotmail.com");
-    })
-    .catch(err => {         
-        console.error('[🔴 Erro ao conectar ao MongoDB]', err)
-    })
+const users = await userStates.find({ login: { $exists: true } })
+
+for (const user of users) {
+    setupWebSocket(user.login)
+}
