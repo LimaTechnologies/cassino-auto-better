@@ -1,36 +1,69 @@
-import { RouletteHistory } from '../model/history';
-import { userStates } from '../model/state';
+import { userStates, type IState } from '../model/state';
+import { getNewSocketUrl } from '../puppeteer/src';
 import { parseAndHandleMessage } from './parser';
-import { WS_URL } from './state';
 import { calculateMinimumBet } from './utils';
 
-export async function setupWebSocket(username: string) {
-  const user = await userStates.findOne({
-    username: username
-  });
-  await userStates.findOneAndUpdate(
-    {
-      username: username
-    },
-    {
-      history: [],
-      inBetMode: false,
-      baseBetAmount: user?.initial_balance ? calculateMinimumBet(user.initial_balance) : 0.4,
-    }
-  )
+let socket: WebSocket;
+let interval: NodeJS.Timeout;
 
-  const socket = new WebSocket(user?.ws_url!);
+export async function setupSocket(url: string, user: IState) {
+	if (socket) {
+		socket.close();
+		clearInterval(interval);
+	}
+	socket = new WebSocket(url);
 
-  socket.onopen = () => {
-    console.log('[🌐 WebSocket conectado]');
-  };
+	socket.onopen = () => {
+		console.log('[🌐 WebSocket conectado]');
+	};
 
-  socket.onmessage = (event) => {
-    parseAndHandleMessage(event.data, socket, username);
-  };
+	socket.onmessage = (event) => {
+		parseAndHandleMessage(event.data, socket, user.username);
+	};
 
-  setInterval(() => {
-    const ping = `<ping time='${Date.now()}'/>`;
-    socket.send(ping);
-  }, 10000);
+	interval = setInterval(() => {
+		const ping = `<ping time='${Date.now()}'/>`;
+		socket.send(ping);
+	}, 10000);
+}
+
+export async function overwrideSocket(email: string) {
+	await getNewSocketUrl(email);
+
+	const user = await userStates.findOne({
+		login: email
+	});
+
+	if (!user) {
+		console.error(`[❌ Erro] Usuário não encontrado: ${email}`);
+		return;
+	}
+
+	setupSocket(user.ws_url, user);
+}
+
+export async function setupWebSocket(email: string) {
+	const user = await userStates.findOne({
+		login: email
+	});
+
+	if (!user) {
+		console.error(`[❌ Erro] Usuário não encontrado: ${email}`);
+		return;
+	}
+
+	await getNewSocketUrl(email);
+
+	await userStates.findOneAndUpdate(
+		{
+			username: user.username
+		},
+		{
+			history: [],
+			inBetMode: false,
+			baseBetAmount: user?.initial_balance ? calculateMinimumBet(user.initial_balance) : 0.4,
+		}
+	)
+
+	setupSocket(user.ws_url, user);
 }

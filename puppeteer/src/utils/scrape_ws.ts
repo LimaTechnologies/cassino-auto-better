@@ -1,5 +1,6 @@
 import { HTTPRequest, Page } from "puppeteer"
 import type { BrowserInstance } from "../class/browser";
+import { type IState } from "../../../model/state";
 
 export const scrapeWebSocket = async ({
     page,
@@ -10,8 +11,10 @@ export const scrapeWebSocket = async ({
     page: Page,
     client: BrowserInstance,
     roullete: string,
-    user: { updateOne: (data: { ws_url: string }) => Promise<void> }
+    user: IState
 }) => {
+    let taskCompleted = false
+
     const res = await page.goto(roullete);
 
     const data: {
@@ -29,8 +32,16 @@ export const scrapeWebSocket = async ({
                     await user.updateOne({
                         ws_url: res.url(),
                     })
+
+                    taskCompleted = true
                 }
             }
         }
     ])
+
+    while (!taskCompleted) {
+        await new Promise((res, rej) => {
+            setTimeout(res, 100)
+        })
+    }
 }

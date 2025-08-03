@@ -1,6 +1,7 @@
 import { RouletteHistory } from '../model/history';
-import { userStates } from '../model/state';
+import { userStates, type IState } from '../model/state';
 import { calculateMinimumBet, sendBetCommand } from './utils';
+import { overwrideSocket } from './websocket';
 
 export async function handleBetsOpen(attrs: any, socket: WebSocket, username: string) {
 	const state = await userStates.findOne({
@@ -45,6 +46,26 @@ export async function handleBetsOpen(attrs: any, socket: WebSocket, username: st
 		return;
 	}
 
+	if (state.inBetMode && color !== state.targetColor) {
+		sendBetCommand(gameId, username, socket);
+	}
+};
+
+async function checkWin(state: IState) {
+	const newState = await userStates.findOne({
+		username: state.username
+	});
+
+	if (!newState) {
+		console.error(`[❌ Erro] Estado do usuário não encontrado: ${state.username}`);
+		return;
+	}
+
+	state = newState;
+
+	const { lastColor } = state;
+	const color = lastColor.toLowerCase();
+
 	if (state.inBetMode) {
 		const won = color === state.targetColor;
 
@@ -59,13 +80,7 @@ export async function handleBetsOpen(attrs: any, socket: WebSocket, username: st
 				}
 			});
 
-			if (allSame) {
-				await state.updateOne({
-					inBetMode: true
-				});
-
-				await sendBetCommand(gameId, username, socket);
-			}
+			await overwrideSocket(state.login);
 		} else {
 			await state.updateOne({
 				betAmount: state.betAmount * 2,
@@ -75,10 +90,9 @@ export async function handleBetsOpen(attrs: any, socket: WebSocket, username: st
 			})
 
 			console.log(`[🔁 Dobro] Ainda na sequência contrária, nova aposta: €${state.betAmount.toFixed(2)}`);
-			sendBetCommand(gameId, username, socket);
 		}
 	}
-};
+}
 
 export async function handleGameResult(attrs: any, username: string) {
 	const state = await userStates.findOne({
@@ -102,6 +116,8 @@ export async function handleGameResult(attrs: any, username: string) {
 		lastColor: color,
 		history: history
 	});
+
+	await checkWin(state);
 
 	await RouletteHistory.create({ number: Number(attrs.score) })
 }

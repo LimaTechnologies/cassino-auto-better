@@ -20,7 +20,7 @@ await client.browser
 const roullete = "https://rollbit.com/private/games/launch/pragmaticexternal:RouletteAzure"
 
 export async function getNewSocketUrl(email: string) {
-    const user = await userStates.findOne({ email });
+    const user = await userStates.findOne({ login: email });
 
     if (!user) {
         throw new Error(`User with email ${email} not found`);
@@ -35,7 +35,7 @@ export async function getNewSocketUrl(email: string) {
 
         await page.goto(rollbit);
 
-        await page.waitForNetworkIdle({ idleTime: 2000 })
+        await page.waitForNetworkIdle({ idleTime: 500 })
 
         let isLoggedIn = await checkSession(page);
 
@@ -47,5 +47,7 @@ export async function getNewSocketUrl(email: string) {
             roullete,
             user
         })
+
+        await page.close()
     }
 }
