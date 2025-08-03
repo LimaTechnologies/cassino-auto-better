@@ -1,5 +1,6 @@
 import { extractTags } from './utils';
 import { handleBetsOpen, handleGameResult, handleWinners } from './betting';
+import { overwrideSocket } from './websocket';
 
 export function parseAndHandleMessage(xml: string, socket: WebSocket, username: string) {
     const tags = extractTags(xml);
@@ -34,6 +35,10 @@ export function parseAndHandleMessage(xml: string, socket: WebSocket, username: 
         if (name == "betsopen") handleBetsOpen(attrs, socket, username);
         if (name == "session") {
             console.log(`[🌐 WebSocket] Session: ${content}`);
+
+            if (content == "offline") {
+                overwrideSocket(username)
+            }
         }
 
         if (

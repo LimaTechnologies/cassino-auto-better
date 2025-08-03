@@ -16,6 +16,8 @@ export async function handleNewSocket(email: string) {
 		socket.close();
 	}
 
+	console.log("[!!] Desconectando sessão e timeout antigos")
+
 	await getNewSocketUrl(email);
 }
 

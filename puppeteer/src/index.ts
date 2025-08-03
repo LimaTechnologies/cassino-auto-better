@@ -10,13 +10,15 @@ import { wait } from "../../src/websocket";
 export async function getNewSocketUrl(email: string) {
     const client = new BrowserInstance({
         "sessionName": email,
-        headless: false,
+        headless: true,
     })
 
     const rollbit = "https://rollbit.com/"
 
     const roullete = "https://rollbit.com/private/games/launch/pragmaticexternal:RouletteAzure"
     const roulleteUi = "https://rollbit.com/game/pragmaticexternal:RouletteAzure"
+
+    console.log("[00] Abrindo browser")
 
     await client.init();
 
