@@ -15,3 +15,9 @@ export async function loginRollbit(page: Page, email: string, password: string) 
 
     await page.keyboard.press("Enter");
 }
+
+export async function loadUi(page: Page, ui_url: string) {
+    await page.goto(ui_url)
+
+    await page.waitForNetworkIdle({ idleTime: 100 })
+}

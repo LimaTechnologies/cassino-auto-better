@@ -1,20 +1,22 @@
 import { BrowserInstance } from "./class/browser";
-import { connect } from "mongoose"
-import { loginRollbit } from "./utils/loginRollbit";
-import { checkSession } from "./utils/checkSession";
+import { loadUi, loginRollbit } from "./utils/loginRollbit";
+import { checkCaptcha, checkSession } from "./utils/checkSession";
 import { cleanBrowser } from "./utils/clean";
 import { scrapeWebSocket } from "./utils/scrape_ws";
 import { userStates } from "../../model/state";
+import { wait } from "../../src/websocket";
 
-const rollbit = "https://rollbit.com/"
-
-const roullete = "https://rollbit.com/private/games/launch/pragmaticexternal:RouletteAzure"
 
 export async function getNewSocketUrl(email: string) {
     const client = new BrowserInstance({
         "sessionName": email,
         headless: false,
     })
+
+    const rollbit = "https://rollbit.com/"
+
+    const roullete = "https://rollbit.com/private/games/launch/pragmaticexternal:RouletteAzure"
+    const roulleteUi = "https://rollbit.com/game/pragmaticexternal:RouletteAzure"
 
     await client.init();
 
@@ -31,23 +33,33 @@ export async function getNewSocketUrl(email: string) {
     const page = await client.browser?.newPage();
 
     if (page) {
+        await loadUi(page, roulleteUi)
+
         await cleanBrowser(client);
 
-        await page.goto(rollbit);
+        const scrapeParams = { page, client, roullete, user }
 
-        await page.waitForNetworkIdle({ idleTime: 500 })
+        try {
+            await scrapeWebSocket(scrapeParams)
+        } catch (err) {
+            await page.goto(rollbit);
 
-        let isLoggedIn = await checkSession(page);
+            await page.waitForNetworkIdle({ idleTime: 2000 })
 
-        if (!isLoggedIn) await loginRollbit(page, email, password);
+            await loginRollbit(page, email, password);
 
-        await scrapeWebSocket({
-            page,
-            client,
-            roullete,
-            user
-        })
+            await page.waitForNetworkIdle({ idleTime: 2000 })
 
-        await page.close()
+            const captcha = await checkCaptcha(page)
+
+            console.log("Captcha on?", captcha)
+
+            // await scrapeWebSocket(scrapeParams)
+            // resolver captcha depois
+
+            await wait(1 * 60 * 1000)
+        }
+
+        await client.browser?.close()
     }
 }

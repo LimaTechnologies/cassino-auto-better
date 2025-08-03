@@ -6,11 +6,20 @@ import { calculateMinimumBet } from './utils';
 let socket: WebSocket;
 let interval: NodeJS.Timeout;
 
-export async function setupSocket(url: string, user: IState) {
+export async function wait(ms: number) {
+	return new Promise((res, rej) => setTimeout(res, ms))
+}
+
+export async function handleNewSocket(email: string) {
 	if (socket) {
 		clearInterval(interval);
 		socket.close();
 	}
+
+	await getNewSocketUrl(email);
+}
+
+export async function setupSocket(url: string, user: IState) {
 	socket = new WebSocket(url);
 
 	socket.onopen = () => {
@@ -28,7 +37,7 @@ export async function setupSocket(url: string, user: IState) {
 }
 
 export async function overwrideSocket(email: string) {
-	await getNewSocketUrl(email);
+	await handleNewSocket(email)
 
 	const user = await userStates.findOne({
 		login: email
@@ -52,7 +61,7 @@ export async function setupWebSocket(email: string) {
 		return;
 	}
 
-	await getNewSocketUrl(email);
+	await handleNewSocket(email)
 
 	await userStates.findOneAndUpdate(
 		{

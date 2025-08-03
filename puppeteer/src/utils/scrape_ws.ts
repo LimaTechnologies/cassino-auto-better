@@ -17,9 +17,9 @@ export const scrapeWebSocket = async ({
 
     const res = await page.goto(roullete);
 
-    const data: {
-        game_url: string;
-        strategy: string;
+    let data: {
+        game_url: string,
+        strategy: string
     } = await res?.json();
 
     await page.goto(data.game_url);
