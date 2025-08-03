@@ -49,7 +49,7 @@ export async function handleBetsOpen(attrs: any, socket: WebSocket, username: st
 		const won = color === state.targetColor;
 
 		if (won) {
-			console.log(`[✅ Vitória] Ganhamos com ${color}, resetando.`);
+			console.log(`[✅ Vitória] Ganhamos com ${color}, resetando. Saldo: ${state.initial_balance + state.betAmount * 2}`);
 
 			await state.updateOne({
 				inBetMode: false,

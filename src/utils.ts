@@ -32,7 +32,7 @@ export async function sendBetCommand(gameId: string, username: string, socket: W
 }
 
 export function calculateMinimumBet(balance: number): number {
-    const minBet = Number((balance / Math.pow(2, 12)).toFixed(1));
+    const minBet = Number((balance / Math.pow(2, 8)).toFixed(1));
     return Math.max(minBet, 0.1);
 }
 

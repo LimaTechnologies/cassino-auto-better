@@ -19,7 +19,7 @@ export async function setupWebSocket(username: string) {
     }
   )
 
-  const socket = new WebSocket(WS_URL);
+  const socket = new WebSocket(user?.ws_url!);
 
   socket.onopen = () => {
     console.log('[🌐 WebSocket conectado]');
