@@ -10,7 +10,7 @@ import { wait } from "../../src/websocket";
 export async function getNewSocketUrl(email: string) {
     const client = new BrowserInstance({
         "sessionName": email,
-        headless: true,
+        headless: false,
     })
 
     const rollbit = "https://rollbit.com/"
@@ -24,7 +24,16 @@ export async function getNewSocketUrl(email: string) {
 
     await client.browser
 
-    const user = await userStates.findOne({ login: email });
+    const user = await userStates.findOne({
+        $or: [
+            {
+                login: email
+            },
+            {
+                username: email
+            }
+        ]
+    });
 
     if (!user) {
         throw new Error(`User with email ${email} not found`);
