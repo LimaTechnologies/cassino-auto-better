@@ -53,13 +53,12 @@ export async function getNewSocketUrl(email: string) {
         try {
             await scrapeWebSocket(scrapeParams)
         } catch (err) {
+            console.log("Usuario nao authenticado, logando")
             await page.goto(rollbit);
 
-            await page.waitForNetworkIdle({ idleTime: 2000 })
+            await wait(2000)
 
             await loginRollbit(page, email, password);
-
-            await page.waitForNetworkIdle({ idleTime: 2000 })
 
             const captcha = await checkCaptcha(page)
 

@@ -1,6 +1,8 @@
 import { HTTPRequest, Page } from "puppeteer"
 import type { BrowserInstance } from "../class/browser";
 import { type IState } from "../../../model/state";
+import { wait } from "../../../src/websocket";
+import { updateUserBalance } from "./updateBalance";
 
 export const scrapeWebSocket = async ({
     page,
@@ -14,6 +16,8 @@ export const scrapeWebSocket = async ({
     user: IState
 }) => {
     let taskCompleted = false
+
+    await updateUserBalance(page, user.username)
 
     const res = await page.goto(roullete);
 
