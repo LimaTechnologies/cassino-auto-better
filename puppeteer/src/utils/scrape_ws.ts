@@ -4,6 +4,7 @@ import { type IState } from "../../../model/state";
 import { wait } from "../../../src/websocket";
 import { updateUserBalance } from "./updateBalance";
 
+let lastUpdate = 0
 export const scrapeWebSocket = async ({
     page,
     client,
@@ -15,9 +16,16 @@ export const scrapeWebSocket = async ({
     roullete: string,
     user: IState
 }) => {
+    if (lastUpdate > Date.now() - (60 * 1000 * 60)) {
+        return;
+    }
+
+    lastUpdate = Date.now()    
     let taskCompleted = false
 
     await updateUserBalance(page, user.username)
+
+    await wait(1000)
 
     const res = await page.goto(roullete);
 

@@ -31,7 +31,7 @@ export function parseAndHandleMessage(xml: string, socket: WebSocket, username: 
 
     for (const { name, attrs, content } of tags) {
         if (name === 'gameresult') handleGameResult(attrs, username);
-        if (name === 'winners') handleWinners(attrs);
+        // if (name === 'winners') handleWinners(attrs);
         if (name == "betsopen") handleBetsOpen(attrs, socket, username);
         if (name == "session") {
             console.log(`[🌐 WebSocket] Session: ${content}`);

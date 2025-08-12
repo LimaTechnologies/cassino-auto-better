@@ -1,48 +1,74 @@
 import { connect } from "mongoose"
 import { RouletteHistory } from "../model/history";
 
-const circularMap = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+await connect(process.env.MONGO_URL!)
 
-type HeatMap = Record<number, number>;
+const history = await RouletteHistory.find({})
 
-const heat: HeatMap = Object.fromEntries(circularMap.map(n => [n, 0]));
+type Cor = "red" | "black" | "green";
 
-function hitNumber(num: number) {
-    const idx = circularMap.indexOf(num);
-    if (idx === -1) return;
 
-    heat[num] += 3;
+let saldo = 102;
+let apostaBase = 0.1;
+let apostaAtual = apostaBase;
+let ultimaCor: Cor | null = null;
+let apostando = false;
+let corAposta: Cor | null = null;
+let wins = 0;
+let losses = 0;
+let emSequencia = 0; // Quantas vezes perdeu na sequência
+let cicloAtivo = false;
+let apostaCiclo = apostaBase;
 
-    for (let offset = 1; offset <= 4; offset++) {
-        const leftIdx = (idx - offset + circularMap.length) % circularMap.length;
-        const rightIdx = (idx + offset) % circularMap.length;
-        const inc = offset === 4 ? 1 : 2;
+let aguardandoMudanca = true;
+for (const [i, item] of history.entries()) {
+    const corAtual = item.color as Cor;
 
-        heat[circularMap[leftIdx]] += inc;
-        heat[circularMap[rightIdx]] += inc;
-    }
-}
-
-function printProbabilityChart() {
-    const total = Object.values(heat).reduce((a, b) => a + b, 0);
-    const sorted = Object.entries(heat)
-        .map(([n, h]) => ({ n: Number(n), h }))
-        .sort((a, b) => b.h - a.h);
-
-    for (const { n, h } of sorted) {
-        const prob = (h / total) * 100;
-        const bar = "█".repeat(Math.round(prob));
-        console.log(`${n.toString().padStart(2, " ")} | ${bar} ${prob.toFixed(2)}%`);
-    }
-}
-
-connect(process.env.MONGO_URL!)
-    .then(async () => {
-        const history = await RouletteHistory.find()
-
-        for (const item of history) {
-            hitNumber(item.number)
+    if (aguardandoMudanca) {
+        // Só começa a apostar quando a cor mudar
+        if (ultimaCor && corAtual !== ultimaCor) {
+            corAposta = ultimaCor === "red" ? "black" : "red";
+            cicloAtivo = true;
+            apostaCiclo = apostaBase;
+            emSequencia = 0;
+            aguardandoMudanca = false;
+        } else {
+            ultimaCor = corAtual;
+            continue;
         }
+    }
 
-        printProbabilityChart();
-    })
+    if (cicloAtivo) {
+        if (corAtual === corAposta) {
+            // Ganhou a aposta (encerra ciclo martingale)
+            saldo += apostaCiclo;
+            wins++;
+            console.log(`[${i}] WIN | Cor: ${corAtual} | Apostou: ${apostaCiclo.toFixed(2)} | Saldo: ${saldo.toFixed(2)} | Tentativas: ${emSequencia + 1}`);
+            // Reinicia ciclo, volta a aguardar nova mudança
+            cicloAtivo = false;
+            apostaCiclo = apostaBase;
+            emSequencia = 0;
+            aguardandoMudanca = true;
+        } else {
+            // Perdeu a aposta, dobra para próxima
+            saldo -= apostaCiclo;
+            emSequencia++;
+            console.log(`[${i}] LOSS | Cor: ${corAtual} | Apostou: ${apostaCiclo.toFixed(2)} | Saldo: ${saldo.toFixed(2)} | Tentativas: ${emSequencia}`);
+            apostaCiclo *= 2;
+            // Se não consegue mais dobrar, considera como loss do ciclo
+            if (saldo < apostaCiclo) {
+                losses++;
+                console.log("Saldo insuficiente para dobrar. Encerrando ciclo de aposta.");
+                cicloAtivo = false;
+                apostaCiclo = apostaBase;
+                emSequencia = 0;
+                aguardandoMudanca = true;
+                continue;
+            }
+        }
+    }
+    ultimaCor = corAtual;
+}
+
+console.log(`Saldo final: ${saldo.toFixed(2)}`);
+console.log(`Wins: ${wins}, Losses: ${losses}`);

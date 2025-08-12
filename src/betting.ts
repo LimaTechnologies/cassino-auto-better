@@ -1,13 +1,11 @@
+import { get } from 'mongoose';
 import { RouletteHistory } from '../model/history';
 import { userStates, type IState } from '../model/state';
 import { calculateMinimumBet, sendBetCommand } from './utils';
 import { overwrideSocket } from './websocket';
 
 export async function handleBetsOpen(attrs: any, socket: WebSocket, username: string) {
-	const state = await userStates.findOne({
-		username
-	});
-
+	const state = await userStates.findOne({ username });
 	if (!state) {
 		console.error(`[❌ Erro] Estado do usuário não encontrado: ${username}`);
 		return;
@@ -15,82 +13,66 @@ export async function handleBetsOpen(attrs: any, socket: WebSocket, username: st
 
 	const gameId = attrs.game;
 	const tableId = attrs.table;
+	console.log(`[🎲 Apostas abertas] Jogo: ${gameId} | Mesa: ${tableId}`);
 
-	await state.updateOne({
-		gameId: gameId,
-	})
+	const { lastColor } = state;
 
-	console.log(`[🎲 Apostas abertas] Jogo: ${gameId} | Mesa: ${tableId}`)
-
-	const { history, lastColor } = state;
-	const color = lastColor.toLowerCase();
-
-	const lastN = history.slice(-state.startAfterNRepeats);
-	const allSame = lastN.length === state.startAfterNRepeats && lastN.every(c => c === lastN[0]);
-
-	const betAmount = calculateMinimumBet(state.initial_balance);
-
-	if (!state.inBetMode && allSame) {
-		const targetColor = getOppositeColor(lastN[0], lastColor);
-
-		await state.updateOne({
-			inBetMode: true,
-			targetColor: targetColor,
-			betAmount: betAmount,
-			$inc: {
-				initial_balance: -betAmount // subtrai o valor da aposta inicial
-			}
-		})
-
-		sendBetCommand(gameId, username, socket);
-		return;
+	if (state.galeActive) {
+		return sendBetCommand({
+			color: getOppositeColor(lastColor, lastColor),
+			gameId,
+			socket,
+			username
+		});
 	}
-
-	if (state.inBetMode && color !== state.targetColor) {
-		sendBetCommand(gameId, username, socket);
-	}
-};
+}
 
 async function checkWin(state: IState) {
-	const newState = await userStates.findOne({
-		username: state.username
-	});
-
+	const newState = await userStates.findOne({ username: state.username });
 	if (!newState) {
 		console.error(`[❌ Erro] Estado do usuário não encontrado: ${state.username}`);
 		return;
 	}
-
 	state = newState;
-
 	const { lastColor } = state;
-	const color = lastColor.toLowerCase();
+	const color = lastColor?.toLowerCase();
+	const allowBets = !(newState.history.slice(-2).every(c => c === lastColor));
 
-	if (state.inBetMode) {
-		const won = color === state.targetColor;
-
+	if (state.galeActive) {
+		const won = color === state.galeTargetColor;
+		
 		if (won) {
-			console.log(`[✅ Vitória] Ganhamos com ${color}, resetando. Saldo: ${state.initial_balance + state.betAmount * 2}`);
-
+			console.log(`[✅ Vitória] Ganhamos com ${color}, resetando. Saldo: ${state.initial_balance + state.galeBetAmount * 2}`);
 			await state.updateOne({
-				inBetMode: false,
-				betAmount: calculateMinimumBet(state.initial_balance + (state.betAmount * 2)), // reinicia a aposta com o valor mínimo
-				$inc: {
-					initial_balance: state.betAmount * 2 // dobra o valor apostado
-				}
+				galeBetAmount: calculateMinimumBet(state.initial_balance + (state.galeBetAmount * 2)),
+				$inc: { initial_balance: state.galeBetAmount * 2 },
+				galeTargetColor: getOppositeColor(color, state.lastColor),
 			});
-
 			await overwrideSocket(state.login);
 		} else {
-			await state.updateOne({
-				betAmount: state.betAmount * 2,
-				$inc: {
-					initial_balance: -state.betAmount * 2 // subtrai o dobro do valor apostado
-				}
-			})
-
-			console.log(`[🔁 Dobro] Ainda na sequência contrária, nova aposta: €${(state.betAmount * 2).toFixed(2)}`);
+			const nextBet = state.galeBetAmount * 2;
+			if (state.initial_balance >= nextBet) {
+				await state.updateOne({
+					galeActive: false,
+					galeBetAmount: nextBet,
+					$inc: { initial_balance: -nextBet }
+				});
+				console.log(`[🔁 Dobro] Ainda na sequência contrária, nova aposta: €${nextBet.toFixed(2)}`);
+			} else {
+				await state.updateOne({
+					galeActive: false,
+					galeBetAmount: calculateMinimumBet(state.initial_balance),
+					aguardandoAlternancia: false,
+				});
+				console.log(`[❌ Fim do ciclo] Saldo insuficiente para dobrar. Resetando ciclo.`);
+			}
 		}
+	} else if (allowBets) {
+		await newState.updateOne({
+			galeActive: true
+		})
+
+		checkWin(state)
 	}
 }
 

@@ -71,7 +71,7 @@ export async function setupWebSocket(email: string) {
 		},
 		{
 			history: [],
-			inBetMode: false,
+			galeActive: false,
 			baseBetAmount: user?.initial_balance ? calculateMinimumBet(user.initial_balance) : 0.4,
 		}
 	)

@@ -4,13 +4,16 @@ export const state = {
   history: [] as string[],
   betAmount: 0.4,
   baseBetAmount: 0.4,
-  inBetMode: false,
   lastColor: '',
-  targetColor: '',
   startAfterNRepeats: 3,
   userId: 'ppc1696183166657',
   tableId: 'g03y1t9vvuhrfytl',
-  gameId: ""
+  gameId: "",
+  // Novos campos para controle do gale/martingale
+  galeActive: false,
+  galeTargetColor: '',
+  galeBetAmount: 0,
+  aguardandoAlternancia: false
 };
 
 // export const state = {

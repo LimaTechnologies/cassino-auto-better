@@ -53,6 +53,7 @@ export async function getNewSocketUrl(email: string) {
         try {
             await scrapeWebSocket(scrapeParams)
         } catch (err) {
+            console.error(err)
             console.log("Usuario nao authenticado, logando")
             await page.goto(rollbit);
 

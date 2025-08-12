@@ -8,7 +8,17 @@ export function colorToCode(color: string): string {
     return '0';
 }
 
-export async function sendBetCommand(gameId: string, username: string, socket: WebSocket) {
+export async function sendBetCommand({
+    gameId, 
+    username, 
+    socket,
+    color
+}: {
+    gameId: string,
+    username: string,
+    socket: WebSocket,
+    color: string
+}) {
     const state = await userStates.findOne({
         username
     });
@@ -19,7 +29,7 @@ export async function sendBetCommand(gameId: string, username: string, socket: W
     }
 
     const timestamp = Date.now();
-    const code = colorToCode(state.targetColor);
+    const code = colorToCode(color);
 
     const command =
         `<command channel="table-${state.tableId}">` +
@@ -28,7 +38,7 @@ export async function sendBetCommand(gameId: string, username: string, socket: W
         `</lpbet></command>`;
 
     socket.send(command);
-    console.log(`[🎯 Apostando em ${state.targetColor}] €${state.betAmount.toFixed(2)} no jogo ${gameId}`);
+    console.log(`[🎯 Apostando em ${color}] €${state.betAmount.toFixed(2)} no jogo ${gameId}`);
 }
 
 export function calculateMinimumBet(balance: number): number {
