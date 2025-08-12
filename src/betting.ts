@@ -38,6 +38,8 @@ async function checkWin(state: IState) {
 	const color = lastColor?.toLowerCase();
 	const allowBets = !(newState.history.slice(-2).every(c => c === lastColor));
 
+	console.log(`[🎨 Apostas Permitidas] ${allowBets ? 'Sim' : 'Não'}`);
+
 	if (state.galeActive) {
 		const won = color === state.galeTargetColor;
 		
@@ -71,8 +73,6 @@ async function checkWin(state: IState) {
 		await newState.updateOne({
 			galeActive: true
 		})
-
-		checkWin(state)
 	}
 }
 
